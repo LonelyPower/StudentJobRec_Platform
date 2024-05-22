@@ -1,5 +1,5 @@
 // controllers/mainController.js
-const db = require('../database/database');
+const db = require('../database/database').db;
 // const router = require('./mainRoutes');s
 const table = 'job';
 exports.index = function (req, res) {
@@ -34,30 +34,58 @@ exports.query = (req, res) => {
     }
     let a = (page - 1) * amount;
     // const queryString = `SELECT * FROM job ${whereClause} LIMIT ${amount} OFFSET ${a}`;
-    const queryString = `SELECT * FROM ${table} ${whereClause} LIMIT ${amount} OFFSET ${a}`;
-    console.log(queryString);
-    db.query(queryString, (err, results) => {
-        if (err) {
-            res.json({
-                status: 400,
-                err:
-                {
-                    sqlMessage: err.sqlMessage,
-                    errno: err.errno
-                },
-            });
-        }
-        else {
+    const queryString1 = `SELECT * FROM ${table} ${whereClause} LIMIT ${amount} OFFSET ${a}`;
+    const queryString2 = `SELECT MAX(id) AS max_id FROM ${table}`;
+    // console.log(queryString1);
+    // console.log(queryString2);
+
+    const query1Promise = new Promise((resolve, reject) => {
+        db.query(queryString1, (err, results) => {
+            if (err) {
+                reject(err);
+            } else {
+                resolve(results);
+            }
+        });
+    });
+
+    const query2Promise = new Promise((resolve, reject) => {
+        db.query(queryString2, (err, results) => {
+            if (err) {
+                reject(err);
+            } else {
+                resolve(results);
+            }
+        });
+    });
+
+    console.log(queryString1);
+    console.log(queryString2);
+    Promise.all([query1Promise, query2Promise])
+        .then(([results, results2]) => {
             if (Object.keys(results).length < amount) {
                 amount = Object.keys(results).length;
             }
             res.json({
                 status: 200,
-                amount: amount,
+                amount: parseInt(amount),
+                // amount: int(amount),
+                max_amount: results2[0].max_id,
                 results,
             });
-        }
-    });
+
+        })
+        .catch(err => {
+            // 处理错误
+            res.json({
+                status: 400,
+                err: {
+                    sqlMessage: err.sqlMessage,
+                    errno: err.errno
+                }
+            });
+        });
+
 };
 
 exports.add = async (req, res) => {
@@ -65,23 +93,20 @@ exports.add = async (req, res) => {
     const contents = { 公司名, 职位, 地区, 要求经验, 详情页, 薪酬, 类别 };
     values = '(';
     for (const key in contents) {
-        if (contents[key] !== 'NULL')
-        {
-            values += '\'' + contents[key] + '\''+',';
+        if (contents[key] !== 'NULL') {
+            values += '\'' + contents[key] + '\'' + ',';
         }
-        else
-        {
+        else {
             values += 'NULL,';
         }
     }
     let lastIndex = values.lastIndexOf(',');
-    if (lastIndex !== -1)
-    {
+    if (lastIndex !== -1) {
         values = values.substring(0, lastIndex) + values.substring(lastIndex + 1);
     }
     values += ')';
     const queryString = `INSERT INTO ${table} ( 公司名, 职位, 地区, 要求经验, 详情页, 薪酬, 类别) VALUES ${values}`;
-    // console.log(queryString);
+    console.log(queryString);
 
     db.query(queryString, (err, results) => {
         if (err) {
@@ -95,6 +120,7 @@ exports.add = async (req, res) => {
             });
         }
         else {
+
             res.json({
                 status: 200,
                 results:
@@ -104,19 +130,22 @@ exports.add = async (req, res) => {
             });
         }
     });
+
+
+
 }
 
 exports.delete = async (req, res) => {
     let a = req.body.id.slice(1, -1);
     let nums = a.split(',').map(Number); // 将字符串拆分成数组，并将每个元素转换为数字
-    let maxNum =  parseInt(Math.max(...nums)); // 找到数组中的最大值
+    let maxNum = parseInt(Math.max(...nums)); // 找到数组中的最大值
     // let maxInt =maxNum; // 将最大值转换为整数
 
     const queryString = `DELETE FROM ${table} WHERE id IN(${a}) `;
     const queryString1 = `ALTER TABLE ${table} DROP id`;
     const queryString2 = `ALTER TABLE ${table} ADD COLUMN id INT AUTO_INCREMENT PRIMARY KEY FIRST`;
     const queryString3 = `SELECT MAX(id) AS max_id FROM ${table}`;
-    
+
     db.query(queryString3, (err, results) => {
         // console.log(results[0].max_id);
         // console.log(req.body.id);
@@ -177,3 +206,4 @@ exports.delete = async (req, res) => {
         }
     });
 }
+

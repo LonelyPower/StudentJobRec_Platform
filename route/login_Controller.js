@@ -1,8 +1,8 @@
 const config = require('./config');
 const jwt = require('jsonwebtoken');
-const testdb = require('../database/database').testdb;
+const db = require('../database/database').db;
 const bcrypt = require('bcrypt');
-const { query } = require('./test_query_Controller');
+
 exports.authenticateJWT = (req, res, next) => {
     const authHeader = req.headers.authorization;
 
@@ -47,7 +47,7 @@ exports.register = async (req, res) => {
 
 
         //向数据库插入数据
-        testdb.query(querystring3);
+        db.query(querystring3);
 
         // 为新用户生成 JWT
         const token = jwt.sign({ username }, config.jwtSecretKey, {
@@ -72,9 +72,9 @@ exports.login = async (req, res) => {
 
     const querystring1 = `SELECT * FROM user_info WHERE username = '${user.username}'`;
     const results1 = await queryDatabase(querystring1);
-    console.log(results1[0]['password']);
+    // console.log(results1[0]['password']);
     if (results1.length === 0) {
-        res.status(200).send({ code: 400, msg: '用户名或密码错误1' });
+        res.status(200).send({ code: 400, msg: '用户名或密码错误' });
         return;
     }
     else {
@@ -101,7 +101,7 @@ exports.login = async (req, res) => {
 
 function queryDatabase(query) {
     return new Promise((resolve, reject) => {
-        testdb.query(query, (err, results) => {
+        db.query(query, (err, results) => {
             if (err) {
                 reject(err);
             } else {

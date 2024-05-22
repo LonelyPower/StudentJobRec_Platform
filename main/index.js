@@ -2,7 +2,7 @@ const express = require('express');
 
 const app = express();
 const mainRoutes = require('../route/mainRoutes');
-const testmainRoutes = require('../route/testmainRoutes');
+const testmainRoutes = require('../test_route/testmainRoutes');
 const port = 8888; 
 
 app.use(express.urlencoded({ extended: true }));

@@ -2,13 +2,14 @@
 
 const express = require('express');
 const router = express.Router();
-const mainController = require('./mainController');
+const loginController = require('./login_Controller');
+const queryController = require('./query_Controller');
 
 // 定义根路径的路由
-router.get('/hello', mainController.index);
-// router.get('/query/all',mainController.query_all)
-router.get('/query', mainController.query)
-router.post('/add', mainController.add)
-router.post('/delete',mainController.delete)
+router.get('/hello', loginController.authenticateJWT, queryController.index);
+router.get('/', loginController.authenticateJWT, queryController.index);
+router.get('/query', loginController.authenticateJWT, queryController.query)
+router.post('/login', loginController.login)
+router.post('/register', loginController.register)
 
 module.exports = router;
